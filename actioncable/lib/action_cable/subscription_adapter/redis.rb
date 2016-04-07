@@ -120,7 +120,9 @@ module ActionCable
           end
 
           def add_channel(channel, on_success)
+            puts "add_channel on sync channel #{channel}"
             @subscription_lock.synchronize do
+              puts "add_channel adding channel #{channel}"
               ensure_listener_running
               @subscribe_callbacks[channel] << on_success
               when_connected { send_command('subscribe', channel) }
