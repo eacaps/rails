@@ -1,4 +1,4 @@
-require 'stubs/user'
+require_relative '../stubs/user'
 
 class TestConnection
   attr_reader :identifiers, :logger, :current_user, :server, :transmissions

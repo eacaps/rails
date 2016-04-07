@@ -1,5 +1,5 @@
-require 'test_helper'
-require 'stubs/test_server'
+require_relative '../test_helper'
+require_relative '../stubs/test_server'
 
 class ActionCable::Connection::StreamTest < ActionCable::TestCase
   class Connection < ActionCable::Connection::Base

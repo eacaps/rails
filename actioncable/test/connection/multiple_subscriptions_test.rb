@@ -1,6 +1,6 @@
-require 'test_helper'
+require_relative '../test_helper'
 
-class ActionCable::Connection::SubscriptionsTest < ActionCable::TestCase
+class ActionCable::Connection::MultipleSubscriptionsTest < ActionCable::TestCase
   class Connection < ActionCable::Connection::Base
     attr_reader :websocket
 
@@ -22,19 +22,34 @@ class ActionCable::Connection::SubscriptionsTest < ActionCable::TestCase
     end
   end
 
+  class PeopleChannel < ActionCable::Channel::Base
+    attr_reader :room, :people
+
+    def subscribed
+      @room = Room.new params[:id]
+      @people = []
+    end
+
+    def speak()
+      @people << 'bahh'
+    end
+  end
+
   setup do
     @server = TestServer.new
-    @server.stubs(:channel_classes).returns(ChatChannel.name => ChatChannel)
+    @server.stubs(:channel_classes).returns(ChatChannel.name => ChatChannel, PeopleChannel.name => PeopleChannel)
 
-    @chat_identifier = ActiveSupport::JSON.encode(id: 1, channel: 'ActionCable::Connection::SubscriptionsTest::ChatChannel')
-    @people_identifier = ActiveSupport::JSON.encode(id: 1, channel: 'ActionCable::Connection::SubscriptionsTest::PeopleChannel')
+    @chat_identifier = ActiveSupport::JSON.encode(id: 1, channel: 'ActionCable::Connection::MultipleSubscriptionsTest::ChatChannel')
+    @people_identifier = ActiveSupport::JSON.encode(id: 1, channel: 'ActionCable::Connection::MultipleSubscriptionsTest::PeopleChannel')
   end
 
   test "subscribe command" do
     run_in_eventmachine do
       setup_connection
+      people_channel = subscribe_to_people_channel
       channel = subscribe_to_chat_channel
 
+      assert_kind_of PeopleChannel, people_channel
       assert_kind_of ChatChannel, channel
       assert_equal 1, channel.room.id
     end
@@ -100,17 +115,24 @@ class ActionCable::Connection::SubscriptionsTest < ActionCable::TestCase
   end
 
   private
-    def subscribe_to_chat_channel(identifier = @chat_identifier)
-      @subscriptions.execute_command 'command' => 'subscribe', 'identifier' => identifier
-      assert_equal identifier, @subscriptions.identifiers.last
+  def subscribe_to_chat_channel(identifier = @chat_identifier)
+    @subscriptions.execute_command 'command' => 'subscribe', 'identifier' => identifier
+    assert_equal identifier, @subscriptions.identifiers.last
 
-      @subscriptions.send :find, 'identifier' => identifier
-    end
+    @subscriptions.send :find, 'identifier' => identifier
+  end
 
-    def setup_connection
-      env = Rack::MockRequest.env_for "/test", 'HTTP_HOST' => 'localhost', 'HTTP_CONNECTION' => 'upgrade', 'HTTP_UPGRADE' => 'websocket'
-      @connection = Connection.new(@server, env)
+  def subscribe_to_people_channel(identifier = @people_identifier)
+    @subscriptions.execute_command 'command' => 'subscribe', 'identifier' => identifier
+    assert_equal identifier, @subscriptions.identifiers.last
 
-      @subscriptions = ActionCable::Connection::Subscriptions.new(@connection)
-    end
+    @subscriptions.send :find, 'identifier' => identifier
+  end
+
+  def setup_connection
+    env = Rack::MockRequest.env_for "/test", 'HTTP_HOST' => 'localhost', 'HTTP_CONNECTION' => 'upgrade', 'HTTP_UPGRADE' => 'websocket'
+    @connection = Connection.new(@server, env)
+
+    @subscriptions = ActionCable::Connection::Subscriptions.new(@connection)
+  end
 end
