@@ -23,11 +23,14 @@ module ActionCable
       end
 
       def add(data)
+        puts "subscriptions add start #{data}"
         id_key = data['identifier']
         id_options = ActiveSupport::JSON.decode(id_key).with_indifferent_access
 
+        puts "subscriptions getting class #{id_key} - #{id_options}"
         subscription_klass = connection.server.channel_classes[id_options[:channel]]
 
+        puts "subscriptions got class #{id_key} - #{id_options}"
         if subscription_klass
           subscriptions[id_key] ||= subscription_klass.new(connection, id_key, id_options)
         else

@@ -7,6 +7,7 @@ module ActionCable
       end
 
       def add_subscriber(channel, subscriber, on_success)
+        puts "add_subscriber start #{channel}"
         @sync.synchronize do
           new_channel = !@subscribers.key?(channel)
 
