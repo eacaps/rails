@@ -87,8 +87,16 @@ module ActionCable
         @channel_classes || @mutex.synchronize do
           puts "@mutex channel_classes start"
           @channel_classes ||= begin
-            config.channel_paths.each { |channel_path| require channel_path }
-            config.channel_class_names.each_with_object({}) { |name, hash| hash[name] = name.constantize }
+            puts "@mutex channel_classes first looping"
+            config.channel_paths.each { |channel_path|
+              puts "@mutex channel_classes path: #{channel_path}"
+              require channel_path
+            }
+            puts "@mutex channel_classes second looping"
+            config.channel_class_names.each_with_object({}) { |name, hash|
+              puts "@mutex channel_classes classname: #{name}"
+              hash[name] = name.constantize
+            }
           end
           puts "@mutex channel_classes end"
         end
