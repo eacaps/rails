@@ -144,6 +144,20 @@ class ClientTest < ActionCable::TestCase
     SyncClient.new(port)
   end
 
+  def test_single_client_multiple_channels
+    with_puma_server do |port|
+      c = faye_client(port)
+      assert_equal({"type" => "welcome"}, c.read_message)  # pop the first welcome message off the stack
+      c.send_message command: 'subscribe', identifier: JSON.generate(channel: 'OtherChannel')
+      assert_equal({"identifier"=>"{\"channel\":\"OtherChannel\"}", "type"=>"confirm_subscription"}, c.read_message)
+      c.send_message command: 'subscribe', identifier: JSON.generate(channel: 'EchoChannel')
+      assert_equal({"identifier"=>"{\"channel\":\"EchoChannel\"}", "type"=>"confirm_subscription"}, c.read_message)
+      c.send_message command: 'message', identifier: JSON.generate(channel: 'EchoChannel'), data: JSON.generate(action: 'ding', message: 'hello')
+      assert_equal({"identifier"=>"{\"channel\":\"EchoChannel\"}", "message"=>{"dong"=>"hello"}}, c.read_message)
+      c.close
+    end
+  end
+
   def test_single_client
     with_puma_server do |port|
       c = faye_client(port)
